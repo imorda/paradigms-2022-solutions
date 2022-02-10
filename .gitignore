@@ -7,5 +7,7 @@ _*
 # Do not store .class files
 *.class
 
+out/
+
 # Store .git files
 !.git*

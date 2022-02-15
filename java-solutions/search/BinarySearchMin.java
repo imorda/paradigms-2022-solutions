@@ -2,12 +2,15 @@ package search;
 
 public class BinarySearchMin {
 
-    // Pre:  array initialized, elements sorted in descending order up to some point strict ascending after,
+    // Pre:  array initialized, \exists x=0..array.length : \forall i=0..x-1 array[x] - array[i] <= 0, \forall i=x..array.length-1  array[i] - array[x] > 0,
     //       lBorder >= -1 exclusive search left border, array[lBorder + 1] - array[lBorder] <= 0 (or undefined),
     //       rBorder < array.length inclusive search right border, array[rBorder + 1] - array[rBorder] > 0 (or undefined),
     //       rBorder > lBorder
-    // Post: \forall \eps > 0 \in N : R-\eps >= 0  array[R] - array[R-\eps] <= 0, array[R+1] - array[R] > 0 (or undefined), array[R] exists.
+    // Post: \forall i=0..R-1  array[R] - array[i] <= 0, \forall i=R..array.length-1  array[i] - array[R] > 0, array[R] exists.
     public static int binSearchMinIter(final int[] array, int lBorder, int rBorder) {
+        // B: \exists x : array[x+1] - array[x] <= 0 \implies \forall i=0..x array[i+1] - array[i] < 0
+        //    \exists x : array[x+1] - array[x] > 0 \implies \forall i=x..array.length-2 array[i+1] - array[i] < 0
+
         // Inv: rBorder > lBorder, array[lBorder + 1] - array[lBorder] <= 0 (or undefined),
         //      array[rBorder + 1] - array[rBorder] > 0 (or undefined)
         while(rBorder - lBorder > 1){
@@ -28,25 +31,29 @@ public class BinarySearchMin {
             }
             // (lBorder < middle < rBorder) -> rBorder' - lBorder' < rBorder-lBorder -> loop is NOT endless.
         }
-        // rBorder > lBorder, array[lBorder + 1] - array[lBorder] <= 0 (or undefined), (rBorder - lBorder <= 1),
+        // rBorder > lBorder, array[lBorder + 1] - array[lBorder] <= 0 (or undefined) && B, (rBorder - lBorder <= 1),
         // array[rBorder + 1] - array[rBorder] > 0 -> (rBorder != lBorder)) && (rBorder > lBorder) ->
-        // -> (rBorder - lBorder = 1) -> array[rBorder] - array[rBorder - 1] > target -> \forall x \in [0, rBorder - 1]
+        // -> (rBorder - lBorder = 1) -> array[rBorder] - array[rBorder - 1] > target && B -> \forall x \in [0, rBorder - 1]
         //      array[x + 1] - array[x] > 0
         // Equiv: \forall \eps > 0 \in N : R-\eps >= 0  array[R] - array[R-\eps] <= 0, array[R+1] - array[R] > 0 (or undefined)
         return rBorder;
     }
 
-    // Pre:  array initialized, elements sorted in descending order up to some point strict ascending after,
+    // Pre:  array initialized, \exists x=0..array.length : \forall i=0..x-1 array[x] - array[i] <= 0, \forall i=x..array.length-1  array[i] - array[x] > 0,
     //       lBorder >= -1 exclusive search left border, array[lBorder + 1] - array[lBorder] <= 0 (or undefined),
     //       rBorder < array.length inclusive search right border, array[rBorder + 1] - array[rBorder] > 0 (or undefined),
     //       rBorder > lBorder
-    // Post: \forall \eps > 0 \in N : R-\eps >= 0  array[R] - array[R-\eps] <= 0, array[R+1] - array[R] > 0 (or undefined), array[R] exists.
+    // Post: \forall i=0..R-1  array[R] - array[i] <= 0, \forall i=R..array.length-1  array[i] - array[R] > 0, array[R] exists.
     public static int binSearchMinRec(final int[] array, final int lBorder, final int rBorder) {
         // A: rBorder > lBorder, array[lBorder + 1] - array[lBorder] <= 0 (or undefined),
         //    array[rBorder + 1] - array[rBorder] > 0 (or undefined)
+        // B: \exists x : array[x+1] - array[x] <= 0 \implies \forall i=0..x array[i+1] - array[i] < 0
+        //    \exists x : array[x+1] - array[x] > 0 \implies \forall i=x..array.length-2 array[i+1] - array[i] < 0
         if(rBorder - lBorder <= 1){
             // A && (rBorder - lBorder <= 1) -> lBorder != rBorder -> rBorder - lBorder = 1 ->
-            // array[rBorder] - array[rBorder - 1] > target -> \forall x \in [0, rBorder - 1]  array[x + 1] - array[x] > 0
+            // array[rBorder] - array[rBorder - 1] > target && B -> \forall x \in [0, rBorder - 1]
+            //      array[x + 1] - array[x] > 0
+            // A satisfies B
             // Equiv: \forall \eps > 0 \in N : R-\eps >= 0  array[R] - array[R-\eps] <= 0, array[R+1] - array[R] > 0 (or undefined)
             return rBorder;
         } else {

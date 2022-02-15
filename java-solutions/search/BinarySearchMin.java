@@ -37,10 +37,10 @@ public class BinarySearchMin {
     }
 
     // Pre:  array initialized, elements sorted in descending order up to some point strict ascending after,
-    //       lBorder >= -1 exclusive search left border, array[lBorder + 1] - array[lBorder] <= 0 (or undefined),
-    //       rBorder < array.length inclusive search right border, array[rBorder + 1] - array[rBorder] > 0 (or undefined),
+    //       lBorder >= -1 exclusive search left border, array[lBorder + 1] <= array[lBorder] (or undefined),
+    //       rBorder < array.length inclusive search right border, array[rBorder + 1] > array[rBorder] (or undefined),
     //       rBorder > lBorder
-    // Post: \forall \eps > 0 \in N : R-\eps >= 0  array[R] - array[R-\eps] <= 0, array[R+1] - array[R] > 0 (or undefined), array[R] exists.
+    // Post: \forall i=0..R  array[R] <= array[i], array[R+1] - array[R] > 0 (or undefined), array[R] exists.
     public static int binSearchMinRec(final int[] array, final int lBorder, final int rBorder) {
         // A: rBorder > lBorder, array[lBorder + 1] - array[lBorder] <= 0 (or undefined),
         //    array[rBorder + 1] - array[rBorder] > 0 (or undefined)

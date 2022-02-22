@@ -4,14 +4,14 @@ package queue;
 Model: a[start]..a[end]
 Inv: for i=start..end: a[i] != null
 
-immutable(l, r): for i=l..r: a'[i] == a[i]
+immutable(r, l): for i=l..r: a'[i] == a[i]
 */
 public class ArrayQueueModule {
     private static Object[] elements = new Object[5];
     private static int start = elements.length - 1, end = elements.length - 1;
 
     // Pred: element != null
-    // Post: end' = end + 1 && start' = start && a[end'] = element && immutable(start, end)
+    // Post: end' = end + 1 && start' = start && a[end] = element && immutable(start, end)
     public static void enqueue(Object element) {
         assert element != null;
 
@@ -37,7 +37,7 @@ public class ArrayQueueModule {
     }
 
     // Pred: end >= start
-    // Post: end' = end && start' = start + 1 && immutable(start', end) && R = a[start]
+    // Post: end' = end && start' = start - 1 && immutable(start', end) && R = a[start]
     public static Object dequeue() {
         assert !isEmpty();
 
@@ -80,5 +80,51 @@ public class ArrayQueueModule {
         elements = new Object[5];
         start = elements.length - 1;
         end = elements.length - 1;
+    }
+
+    // Pred: element != null
+    // Post: start' = start + 1 && end' = end && a[start'] = element && immutable(start, end)
+    public static void push(Object element) {
+        assert element != null;
+
+        elements[start] = element;
+        start++;
+        start %= elements.length;
+
+        ensureCapacity();
+    }
+
+    // Pred: end >= start
+    // Post: end' = end + 1 && start' = start && immutable(start, end') && R = a[end]
+    public static Object remove() {
+        assert !isEmpty();
+
+        Object value = elements[end];
+        elements[end] = null;
+        end++;
+        end %= elements.length;
+
+        return value;
+    }
+
+    // Pred: end >= start
+    // Post: immutable(start, end) && start' = start && end' = end && R = a[end]
+    public static Object peek() {
+        assert !isEmpty();
+
+        return elements[end];
+    }
+
+    // Pred: element not null
+    // Post: for i=start..end count of elements that meet "a[i].equals(element)"
+    public static int count(Object element){
+        assert element != null;
+        int ans = 0;
+        for (Object x : elements) {
+            if(x != null && x.equals(element)) {
+                ans++;
+            }
+        }
+        return ans;
     }
 }

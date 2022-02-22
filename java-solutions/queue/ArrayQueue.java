@@ -1,6 +1,7 @@
 package queue;
 
 /*
+// :NOTE: Упростить
 Model: a[start]..a[end]
 Inv: for i=start..end: a[i] != null
 
@@ -11,6 +12,8 @@ public class ArrayQueue {
     private int start = elements.length - 1, end = elements.length - 1;
 
     // Pred: element != null
+    // start = 0
+    // end = -10
     // Post: end' = end + 1 && start' = start && a[end] = element && immutable(start, end)
     public void enqueue(Object element) {
         assert element != null;

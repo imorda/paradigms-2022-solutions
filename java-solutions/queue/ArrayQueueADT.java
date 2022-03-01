@@ -1,10 +1,11 @@
 package queue;
 
 /*
-Model: a[start]..a[end]
-Inv: for i=start..end: a[i] != null
+Model: a_[1]..a_[end]
+Inv: for i=1..end: a[i] != null
 
-immutable(r, l): for i=l..r: a'[i] == a[i]
+immutable(r): for i=1..r: a'[i] == a[i]
+shift(dir, size): end'=end+(dir*size) && for i=max(1, dir*size)..end+(dir*size): a'[i] = a[i + (-dir * size)]
 */
 public class ArrayQueueADT {
     private Object[] elements = new Object[5];
@@ -12,7 +13,7 @@ public class ArrayQueueADT {
 
     // Pred: element != null
     //      data not null
-    // Post: end' = end + 1 && start' = start && a[end] = element && immutable(start, end)
+    // Post: end' = end + 1 && a[end] = element && immutable(end)
     public static void enqueue(ArrayQueueADT data, Object element) {
         assert element != null;
 
@@ -37,9 +38,9 @@ public class ArrayQueueADT {
         }
     }
 
-    // Pred: end >= start
+    // Pred: end >= 1
     //      data not null
-    // Post: end' = end && start' = start - 1 && immutable(start', end) && R = a[start]
+    // Post: shift(-1, 1) && R = a[1]
     public static Object dequeue(ArrayQueueADT data) {
         assert !isEmpty(data);
 
@@ -53,9 +54,9 @@ public class ArrayQueueADT {
         return value;
     }
 
-    // Pred: end >= start
+    // Pred: end >= 1
     //      data not null
-    // Post: immutable(start, end) && start' = start && end' = end && R = a[start]
+    // Post: immutable(end) && end' = end && R = a[1]
     public static Object element(ArrayQueueADT data) {
         assert !isEmpty(data);
 
@@ -64,7 +65,7 @@ public class ArrayQueueADT {
 
     // Pred: true
     //      data not null
-    // Post: immutable(start, end) && start' = start && end' = end && R = end - start + 1
+    // Post: immutable(end) && end' = end && R = end
     public static int size(ArrayQueueADT data) {
         if(data.end > data.start){
             return (data.start + 1) + (data.elements.length - data.end - 1);
@@ -74,14 +75,14 @@ public class ArrayQueueADT {
 
     // Pred: true
     //      data not null
-    // Post: immutable(start, end) && start' = start && end' = end && R = (end - start + 1 == 0)
+    // Post: immutable(end) && end' = end && R = (end >= 1)
     public static boolean isEmpty(ArrayQueueADT data) {
         return data.start == data.end;
     }
 
     // Pred: true
     //      data not null
-    // Post: start < end
+    // Post: end' = 0
     public static void clear(ArrayQueueADT data) {
         data.elements = new Object[5];
         data.start = data.elements.length - 1;
@@ -90,7 +91,7 @@ public class ArrayQueueADT {
 
     // Pred: element != null
     //      data not null
-    // Post: start' = start + 1 && end' = end && a[start'] = element && immutable(start, end)
+    // Post: shift(1, 1) && a[1] = element
     public static void push(ArrayQueueADT data, Object element) {
         assert element != null;
 
@@ -101,9 +102,9 @@ public class ArrayQueueADT {
         ensureCapacity(data);
     }
 
-    // Pred: end >= start
+    // Pred: end >= 1
     //      data not null
-    // Post: end' = end + 1 && start' = start && immutable(start, end') && R = a[end]
+    // Post: end' = end - 1 && immutable(end') && R = a[end]
     public static Object remove(ArrayQueueADT data) {
         assert !isEmpty(data);
 
@@ -115,9 +116,9 @@ public class ArrayQueueADT {
         return value;
     }
 
-    // Pred: end >= start
+    // Pred: end >= 1
     //      data not null
-    // Post: immutable(start, end) && start' = start && end' = end && R = a[end]
+    // Post: immutable(end) && end' = end && R = a[end]
     public static Object peek(ArrayQueueADT data) {
         assert !isEmpty(data);
 
@@ -126,7 +127,7 @@ public class ArrayQueueADT {
 
     // Pred: element not null
     //      data not null
-    // Post: for i=start..end count of elements that meet "a[i].equals(element)"
+    // Post: for i=1..end count of elements that meet "a[i].equals(element)"
     public static int count(ArrayQueueADT data, Object element){
         assert element != null;
         int ans = 0;

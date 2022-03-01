@@ -1,92 +1,45 @@
 package queue;
 
-/*
-// :NOTE: Упростить
-Model: a[start]..a[end]
-Inv: for i=start..end: a[i] != null
-
-immutable(r, l): for i=l..r: a'[i] == a[i]
-*/
-public class ArrayQueue {
+public class ArrayQueue extends AbstractQueue {
     private Object[] elements = new Object[5];
     private int start = elements.length - 1, end = elements.length - 1;
 
-    // Pred: element != null
-    // start = 0
-    // end = -10
-    // Post: end' = end + 1 && start' = start && a[end] = element && immutable(start, end)
-    public void enqueue(Object element) {
-        assert element != null;
-
+    @Override
+    public void enqueueImpl(Object element) {
         elements[end] = element;
         end--;
-        if(end < 0){
+        if (end < 0) {
             end = elements.length - 1;
         }
 
         ensureCapacity();
     }
 
-    private void ensureCapacity() {
-        if(end == start){
-            Object[] newElements = new Object[elements.length * 2 + 1];
-            System.arraycopy(elements, 0, newElements, 0, start + 1);
-            int rightSegLength = elements.length - (end + 1);
-            System.arraycopy(elements, end + 1, newElements,
-                    newElements.length - rightSegLength, rightSegLength);
-            elements = newElements;
-            end = newElements.length - rightSegLength - 1;
-        }
-    }
 
-    // Pred: end >= start
-    // Post: end' = end && start' = start - 1 && immutable(start', end) && R = a[start]
-    public Object dequeue() {
-        assert !isEmpty();
-
+    @Override
+    public Object dequeueImpl() {
         Object value = elements[start];
         elements[start] = null;
         start--;
-        if(start < 0){
+        if (start < 0) {
             start = elements.length - 1;
         }
 
         return value;
     }
 
-    // Pred: end >= start
-    // Post: immutable(start, end) && start' = start && end' = end && R = a[start]
-    public Object element() {
-        assert !isEmpty();
-
+    @Override
+    public Object elementImpl() {
         return elements[start];
     }
 
-    // Pred: true
-    // Post: immutable(start, end) && start' = start && end' = end && R = end - start + 1
-    public int size() {
-        if(end > start){
-            return (start + 1) + (elements.length - end - 1);
-        }
-        return start - end;
-    }
-
-    // Pred: true
-    // Post: immutable(start, end) && start' = start && end' = end && R = (end - start + 1 == 0)
-    public boolean isEmpty() {
-        return start == end;
-    }
-
-    // Pred: true
-    // Post: start < end
-    public void clear() {
+    @Override
+    public void clearImpl() {
         elements = new Object[5];
         start = elements.length - 1;
         end = elements.length - 1;
     }
 
-    // Pred: element != null
-    // Post: start' = start + 1 && end' = end && a[start'] = element && immutable(start, end)
     public void push(Object element) {
         assert element != null;
 
@@ -97,8 +50,6 @@ public class ArrayQueue {
         ensureCapacity();
     }
 
-    // Pred: end >= start
-    // Post: end' = end + 1 && start' = start && immutable(start, end') && R = a[end]
     public Object remove() {
         assert !isEmpty();
 
@@ -110,24 +61,32 @@ public class ArrayQueue {
         return value;
     }
 
-    // Pred: end >= start
-    // Post: immutable(start, end) && start' = start && end' = end && R = a[end]
     public Object peek() {
         assert !isEmpty();
 
         return elements[end];
     }
 
-    // Pred: element not null
-    // Post: for i=start..end count of elements that meet "a[i].equals(element)"
-    public int count(Object element){
+    public int count(Object element) {
         assert element != null;
         int ans = 0;
         for (Object x : elements) {
-            if(x != null && x.equals(element)) {
+            if (x != null && x.equals(element)) {
                 ans++;
             }
         }
         return ans;
+    }
+
+    private void ensureCapacity() {
+        if (end == start) {
+            Object[] newElements = new Object[elements.length * 2 + 1];
+            System.arraycopy(elements, 0, newElements, 0, start + 1);
+            int rightSegLength = elements.length - (end + 1);
+            System.arraycopy(elements, end + 1, newElements,
+                    newElements.length - rightSegLength, rightSegLength);
+            elements = newElements;
+            end = newElements.length - rightSegLength - 1;
+        }
     }
 }

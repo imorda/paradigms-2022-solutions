@@ -1,17 +1,18 @@
 package queue;
 
 /*
-Model: a[start]..a[end]
-Inv: for i=start..end: a[i] != null
+Model: a_[1]..a_[end]
+Inv: for i=1..end: a[i] != null
 
-immutable(r, l): for i=l..r: a'[i] == a[i]
+immutable(r): for i=1..r: a'[i] == a[i]
+shift(dir, size): end'=end+(dir*size) && for i=max(1, dir*size)..end+(dir*size): a'[i] = a[i + (-dir * size)]
 */
 public class ArrayQueueModule {
     private static Object[] elements = new Object[5];
     private static int start = elements.length - 1, end = elements.length - 1;
 
     // Pred: element != null
-    // Post: end' = end + 1 && start' = start && a[end] = element && immutable(start, end)
+    // Post: end' = end + 1 && a[end] = element && immutable(end)
     public static void enqueue(Object element) {
         assert element != null;
 
@@ -36,8 +37,8 @@ public class ArrayQueueModule {
         }
     }
 
-    // Pred: end >= start
-    // Post: end' = end && start' = start - 1 && immutable(start', end) && R = a[start]
+    // Pred: end >= 1
+    // Post: shift(-1, 1) && R = a[1]
     public static Object dequeue() {
         assert !isEmpty();
 
@@ -51,8 +52,8 @@ public class ArrayQueueModule {
         return value;
     }
 
-    // Pred: end >= start
-    // Post: immutable(start, end) && start' = start && end' = end && R = a[start]
+    // Pred: end >= 1
+    // Post: immutable(end) && end' = end && R = a[1]
     public static Object element() {
         assert !isEmpty();
 
@@ -60,7 +61,7 @@ public class ArrayQueueModule {
     }
 
     // Pred: true
-    // Post: immutable(start, end) && start' = start && end' = end && R = end - start + 1
+    // Post: immutable(end) && end' = end && R = end
     public static int size() {
         if(end > start){
             return (start + 1) + (elements.length - end - 1);
@@ -69,13 +70,13 @@ public class ArrayQueueModule {
     }
 
     // Pred: true
-    // Post: immutable(start, end) && start' = start && end' = end && R = (end - start + 1 == 0)
+    // Post: immutable(end) && end' = end && R = (end >= 1)
     public static boolean isEmpty() {
         return start == end;
     }
 
     // Pred: true
-    // Post: start < end
+    // Post: end' = 0
     public static void clear() {
         elements = new Object[5];
         start = elements.length - 1;
@@ -83,7 +84,7 @@ public class ArrayQueueModule {
     }
 
     // Pred: element != null
-    // Post: start' = start + 1 && end' = end && a[start'] = element && immutable(start, end)
+    // Post: shift(1, 1) && a[1] = element
     public static void push(Object element) {
         assert element != null;
 
@@ -94,8 +95,8 @@ public class ArrayQueueModule {
         ensureCapacity();
     }
 
-    // Pred: end >= start
-    // Post: end' = end + 1 && start' = start && immutable(start, end') && R = a[end]
+    // Pred: end >= 1
+    // Post: end' = end - 1 && immutable(end') && R = a[end]
     public static Object remove() {
         assert !isEmpty();
 
@@ -107,8 +108,8 @@ public class ArrayQueueModule {
         return value;
     }
 
-    // Pred: end >= start
-    // Post: immutable(start, end) && start' = start && end' = end && R = a[end]
+    // Pred: end >= 1
+    // Post: immutable(end) && end' = end && R = a[end]
     public static Object peek() {
         assert !isEmpty();
 
@@ -116,7 +117,7 @@ public class ArrayQueueModule {
     }
 
     // Pred: element not null
-    // Post: for i=start..end count of elements that meet "a[i].equals(element)"
+    // Post: for i=1..end count of elements that meet "a[i].equals(element)"
     public static int count(Object element){
         assert element != null;
         int ans = 0;

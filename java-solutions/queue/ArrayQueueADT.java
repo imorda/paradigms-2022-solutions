@@ -95,9 +95,10 @@ public class ArrayQueueADT {
     public static void push(ArrayQueueADT data, Object element) {
         assert element != null;
 
-        data.elements[data.start] = element;
         data.start++;
         data.start %= data.elements.length;
+
+        data.elements[data.start] = element;
 
         ensureCapacity(data);
     }
@@ -108,10 +109,10 @@ public class ArrayQueueADT {
     public static Object remove(ArrayQueueADT data) {
         assert !isEmpty(data);
 
-        Object value = data.elements[data.end];
-        data.elements[data.end] = null;
         data.end++;
         data.end %= data.elements.length;
+        Object value = data.elements[data.end];
+        data.elements[data.end] = null;
 
         return value;
     }
@@ -122,7 +123,7 @@ public class ArrayQueueADT {
     public static Object peek(ArrayQueueADT data) {
         assert !isEmpty(data);
 
-        return data.elements[data.end];
+        return data.elements[(data.end + 1) % data.elements.length];
     }
 
     // Pred: element not null

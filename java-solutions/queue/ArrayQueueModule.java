@@ -88,11 +88,11 @@ public class ArrayQueueModule {
     public static void push(Object element) {
         assert element != null;
 
-        elements[start] = element;
         start++;
         start %= elements.length;
-
         ensureCapacity();
+
+        elements[start] = element;
     }
 
     // Pred: n >= 1
@@ -100,10 +100,11 @@ public class ArrayQueueModule {
     public static Object remove() {
         assert !isEmpty();
 
-        Object value = elements[end];
-        elements[end] = null;
         end++;
         end %= elements.length;
+
+        Object value = elements[end];
+        elements[end] = null;
 
         return value;
     }
@@ -113,7 +114,7 @@ public class ArrayQueueModule {
     public static Object peek() {
         assert !isEmpty();
 
-        return elements[end];
+        return elements[(end  +  1) % elements.length];
     }
 
     // Pred: element not null

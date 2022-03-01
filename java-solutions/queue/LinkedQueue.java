@@ -33,6 +33,11 @@ public class LinkedQueue extends AbstractQueue {
     }
 
     @Override
+    Queue emptyClone() {
+        return new LinkedQueue();
+    }
+
+    @Override
     public void clearImpl() {
         start = null;
         end = null;

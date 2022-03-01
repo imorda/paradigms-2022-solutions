@@ -1,5 +1,8 @@
 package queue;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
+
 /*
 Model: a_[1]..a_[n]
 Inv: for i=1..n: a[i] != null
@@ -31,4 +34,12 @@ public interface Queue {
     // Pred: true
     // Post: n' = 0
     void clear();
+
+    // Pred: func not null
+    // Post: immutable(n) && n' = n && R = (for i=1..n: func(a[i]))
+    Queue map(Function<Object, Object> func);
+
+    // Pred: pred not null
+    // Post: immutable(n) && n' = n && R = { a | pred(a) == true }
+    Queue filter(Predicate<Object> pred);
 }

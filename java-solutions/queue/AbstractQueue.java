@@ -1,7 +1,10 @@
 package queue;
 
+import java.util.function.Function;
+import java.util.function.Predicate;
+
 public abstract class AbstractQueue implements Queue {
-    private int size = 0;
+    protected int size = 0;
 
     @Override
     public void enqueue(Object element) {
@@ -38,6 +41,34 @@ public abstract class AbstractQueue implements Queue {
         size = 0;
         clearImpl();
     }
+
+    @Override
+    public Queue map(Function<Object, Object> func) {
+        assert func != null;
+        Queue ret = emptyClone();
+        for (int i = 0; i < this.size(); i++) {
+            Object element = this.dequeue();
+            ret.enqueue(func.apply(element));
+            this.enqueue(element);
+        }
+        return ret;
+    }
+
+    @Override
+    public Queue filter(Predicate<Object> pred) {
+        assert pred != null;
+        Queue ret = emptyClone();
+        for (int i = 0; i < this.size(); i++) {
+            Object element = this.dequeue();
+            if (pred.test(element)) {
+                ret.enqueue(element);
+            }
+            this.enqueue(element);
+        }
+        return ret;
+    }
+
+    abstract Queue emptyClone();
 
     abstract void clearImpl();
 

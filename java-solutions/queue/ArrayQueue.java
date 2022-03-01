@@ -43,9 +43,10 @@ public class ArrayQueue extends AbstractQueue {
     public void push(Object element) {
         assert element != null;
 
-        elements[start] = element;
+        size++;
         start++;
         start %= elements.length;
+        elements[start] = element;
 
         ensureCapacity();
     }
@@ -53,10 +54,11 @@ public class ArrayQueue extends AbstractQueue {
     public Object remove() {
         assert !isEmpty();
 
-        Object value = elements[end];
-        elements[end] = null;
+        size--;
         end++;
         end %= elements.length;
+        Object value = elements[end];
+        elements[end] = null;
 
         return value;
     }
@@ -64,7 +66,7 @@ public class ArrayQueue extends AbstractQueue {
     public Object peek() {
         assert !isEmpty();
 
-        return elements[end];
+        return elements[(end + 1) % elements.length];
     }
 
     public int count(Object element) {
@@ -76,6 +78,11 @@ public class ArrayQueue extends AbstractQueue {
             }
         }
         return ans;
+    }
+
+    @Override
+    Queue emptyClone() {
+        return new ArrayQueue();
     }
 
     private void ensureCapacity() {

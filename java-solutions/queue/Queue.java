@@ -6,6 +6,7 @@ import java.util.function.Predicate;
 /*
 Model: a_[1]..a_[n]
 Inv: for i=1..n: a[i] != null
+     n >= 0
 
 immutable(r): for i=1..r: a'[i] == a[i]
 shift(dir, size): n'=n+(dir*size) && for i=max(1, dir*size)..n+(dir*size): a'[i] = a[i + (-dir * size)]
@@ -40,6 +41,6 @@ public interface Queue {
     Queue map(Function<Object, Object> func);
 
     // Pred: pred not null
-    // Post: immutable(n) && n' = n && R = { a | pred(a) == true }
+    // Post: immutable(n) && n' = n && R = { a | pred(a) == true } && for i=1..
     Queue filter(Predicate<Object> pred);
 }

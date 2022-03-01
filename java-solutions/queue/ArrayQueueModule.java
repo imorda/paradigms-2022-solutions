@@ -3,6 +3,7 @@ package queue;
 /*
 Model: a_[1]..a_[n]
 Inv: for i=1..n: a[i] != null
+     n >= 0
 
 immutable(r): for i=1..r: a'[i] == a[i]
 shift(dir, size): n'=n+(dir*size) && for i=max(1, dir*size)..n+(dir*size): a'[i] = a[i + (-dir * size)]

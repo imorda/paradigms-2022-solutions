@@ -41,6 +41,6 @@ public interface Queue {
     Queue map(Function<Object, Object> func);
 
     // Pred: pred not null
-    // Post: immutable(n) && n' = n && R = { a | pred(a) == true } && for i=1..
+    // Post: immutable(n) && n' = n && R = { a | pred(a) == true }
     Queue filter(Predicate<Object> pred);
 }

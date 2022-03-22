@@ -1,15 +1,19 @@
 "use strict";
 
+const binOp = f => (left, right) => (x, y, z) => f(left(x, y, z), right(x, y, z));
+const unOp = f => (exp) => (x, y, z) => f(exp(x, y, z));
+
 const variable = symbol => (x, y, z) => symbol === 'x' ? x : symbol === 'y' ? y : symbol === 'z' ? z : undefined;
 const cnst = num => () => num;
-const negate = expr => (x, y, z) => -expr(x, y, z);
-const add = (left, right) => (x, y, z) => left(x, y, z) + right(x, y, z);
-const subtract = (left, right) => (x, y, z) => left(x, y, z) - right(x, y, z);
-const multiply = (left, right) => (x, y, z) => left(x, y, z) * right(x, y, z);
-const divide = (left, right) => (x, y, z) => left(x, y, z) / right(x, y, z);
+
+const negate = unOp((exp) => -exp);
+const abs = unOp((exp) => Math.abs(exp));
+const add = binOp((left, right) => left + right);
+const subtract = binOp((left, right) => left - right);
+const multiply = binOp((left, right) => left * right);
+const divide = binOp((left, right) => left / right);
 const pi = cnst(Math.PI);
 const e = cnst(Math.E);
-const abs = expr => (x, y, z) => Math.abs(expr(x, y, z));
 const iff = (cond, branch1, branch2) => (x, y, z) => cond(x, y, z) >= 0 ? branch1(x, y, z) : branch2(x, y, z);
 
 

@@ -1,5 +1,6 @@
 "use strict";
 
+// :NOTE: унифицировать
 const binOp = f => (left, right) => (x, y, z) => f(left(x, y, z), right(x, y, z));
 const unOp = f => (exp) => (x, y, z) => f(exp(x, y, z));
 
@@ -25,6 +26,7 @@ const ternaryOpsDict = {"iff": iff};
 const constsDict = {"pi": pi, "e": e};
 
 const parseTokens = function(n, stack) {
+    // :NOTE: Array.map
     let ans = [];
     for(let i = 0; i < n; i++){
         ans.push(parseTokenized(stack));
@@ -35,12 +37,13 @@ const parseTokens = function(n, stack) {
 
 const parseTokenized = function (stack) {
     let current = stack.pop().trim().toLowerCase();
-    while (current.length === 0){
-        if(stack.length === 0){
+    while (current.length === 0) {
+        if (stack.length === 0) {
             return;
         }
         current = stack.pop().trim().toLowerCase();
     }
+    // :NOTE: Многобуквенные переменные
     if ("xyz".includes(current)) {
         return variable(current);
     } else if (binOpsDict[current] !== undefined) {

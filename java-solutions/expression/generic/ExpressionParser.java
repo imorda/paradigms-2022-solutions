@@ -13,12 +13,12 @@ import java.util.function.Function;
 public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements GenericParser<T> {
     private final Function<String, T> strNumFactory;
 
-    public ExpressionParser(Function<String, T> strNumFactory) {
+    public ExpressionParser(final Function<String, T> strNumFactory) {
         this.strNumFactory = strNumFactory;
     }
 
     @Override
-    public GenericExpression<T> parse(String expression) throws ParseException {
+    public GenericExpression<T> parse(final String expression) throws ParseException {
         return new ExpressionParserImpl(expression, strNumFactory).parseExpression();
     }
 
@@ -37,19 +37,20 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
                 Negate.OPERATION_SYM, new SupportedUnaryOperations<T>(Negate::new, -1),
                 Count.OPERATION_SYM, new SupportedUnaryOperations<T>(Count::new, -1)
         );
-        private final String SUPPORTED_VARIABLES = "xyz";
+        // :NOTE: hello
+        private static final String SUPPORTED_VARIABLES = "xyz";
 
-        public ExpressionParserImpl(CharSource source, final Function<String, T> numFactory) {
+        public ExpressionParserImpl(final CharSource source, final Function<String, T> numFactory) {
             super(source);
             numbersFactory = numFactory;
         }
 
-        public ExpressionParserImpl(String source, final Function<String, T> numFactory) {
+        public ExpressionParserImpl(final String source, final Function<String, T> numFactory) {
             this(new StringSource(source), numFactory);
         }
 
         private PriorityExpression<T> parseExpression() throws ParseException {
-            PriorityExpression<T> res = parseOperation();
+            final PriorityExpression<T> res = parseOperation();
             skipWhitespace();
             if (eof()) {
                 return res;
@@ -61,19 +62,19 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
             return parseOperation(Integer.MAX_VALUE);
         }
 
-        private PriorityExpression<T> parseOperation(int maxPriority) throws ParseException {
+        private PriorityExpression<T> parseOperation(final int priority) throws ParseException {
             skipWhitespace();
 
             PriorityExpression<T> leftOperand = parseOperand();
             while (true) {
-                SupportedBinaryOperations<T> operator = takeBinaryOperator(maxPriority);
+                final SupportedBinaryOperations<T> operator = takeBinaryOperator(priority);
 
                 if (operator == null) {
                     return leftOperand;
                 }
 
                 skipWhitespace();
-                PriorityExpression<T> rightOperand = parseOperation(operator.priority() - 1);
+                final PriorityExpression<T> rightOperand = parseOperation(priority - 1);
 
                 leftOperand = operator.expFactory().apply(leftOperand, rightOperand);
             }
@@ -82,46 +83,41 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
         private PriorityExpression<T> parseOperand() throws ParseException {
             skipWhitespace();
             if (take('(')) {
-                PriorityExpression<T> op = parseOperation();
+                final PriorityExpression<T> op = parseOperation();
                 if (!take(')')) {
                     throw new ExpressionParseException("expected ')'", source, peekOrEOF());
                 }
                 return op;
-            }
-            if (test(Character.DECIMAL_DIGIT_NUMBER)) {
-                StringBuilder number = new StringBuilder();
-                return tryExtractConst(number);
-            }
-
-            if (test(x -> SUPPORTED_VARIABLES.indexOf(x) > -1)) {
-                char varSymbol = take();
-                return new Variable<>(String.valueOf(varSymbol));
-            }
-
-            SupportedUnaryOperations<T> operator = takeUnaryOperator();
-            if (operator != null) {
-                if (operator == supportedUnaryOps.get("-") && test(Character.DECIMAL_DIGIT_NUMBER)) {
-                    StringBuilder number = new StringBuilder().append('-');
-                    return tryExtractConst(number);
+            } else if (test(Character.DECIMAL_DIGIT_NUMBER)) {
+                return tryExtractConst(new StringBuilder());
+            } else if (test(x -> SUPPORTED_VARIABLES.indexOf(x) > -1)) {
+                return new Variable<>(String.valueOf(take()));
+            } else {
+                final SupportedUnaryOperations<T> operator = takeUnaryOperator();
+                if (operator != null) {
+                    if (operator == supportedUnaryOps.get("-") && test(Character.DECIMAL_DIGIT_NUMBER)) {
+                        final StringBuilder number = new StringBuilder().append('-');
+                        return tryExtractConst(number);
+                    }
+                    if (test('(')) {
+                        return operator.expFactory().apply(new BraceEnclosed<>(parseOperand()));
+                    }
+                    return operator.expFactory().apply(parseOperand());
                 }
-                if (test('(')) {
-                    return operator.expFactory().apply(new BraceEnclosed<>(parseOperand()));
-                }
-                return operator.expFactory().apply(parseOperand());
+                throw new InvalidOperandException(source, peekOrEOF());
             }
-            throw new InvalidOperandException(source, peekOrEOF());
         }
 
-        private PriorityExpression<T> tryExtractConst(StringBuilder number) throws ParseException {
+        private PriorityExpression<T> tryExtractConst(final StringBuilder number) throws ParseException {
             takeNumber(number);
             try {
                 return new Const<>(numbersFactory.apply(number.toString()));
-            } catch (NumberFormatException e) {
+            } catch (final NumberFormatException e) {
                 throw new NumberParseException(source, number.toString());
             }
         }
 
-        private void takeNumber(StringBuilder sb) throws ParseException {
+        private void takeNumber(final StringBuilder sb) throws ParseException {
             if (take('0')) {
                 sb.append('0');
             } else if (between('1', '9')) {
@@ -143,11 +139,11 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
             }
         }
 
-        private SupportedBinaryOperations<T> takeBinaryOperator(int maxPriority) throws ParseException {
+        private SupportedBinaryOperations<T> takeBinaryOperator(final int priority) throws ParseException {
             skipWhitespace();
 
-            for (SupportedBinaryOperations<T> i : supportedBinOps) {
-                if (i.priority() <= maxPriority && take(i.name())) {
+            for (final SupportedBinaryOperations<T> i : supportedBinOps) {
+                if (i.priority() == priority && take(i.name())) {
                     testAlphanumericTagAmbiguity(i.name());
                     return i;
                 }
@@ -155,21 +151,21 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
             return null;
         }
 
-        private void testAlphanumericTagAmbiguity(String tag) throws ParseException {
+        private void testAlphanumericTagAmbiguity(final String tag) throws ParseException {
             if (isAlphanumericCharType(getCharType())
                     && isAlphanumericCharType(Character.getType(tag.charAt(tag.length() - 1)))) {
                 throw new InvalidOperatorException(source, "illegal characters after " + tag);
             }
         }
 
-        private boolean isAlphanumericCharType(int type) {
+        private boolean isAlphanumericCharType(final int type) {
             return type == Character.UPPERCASE_LETTER
                     || type == Character.LOWERCASE_LETTER
                     || type == Character.DECIMAL_DIGIT_NUMBER;
         }
 
         private SupportedUnaryOperations<T> takeUnaryOperator() throws ParseException {
-            for (Map.Entry<String, SupportedUnaryOperations<T>> i : supportedUnaryOps.entrySet()) {
+            for (final Map.Entry<String, SupportedUnaryOperations<T>> i : supportedUnaryOps.entrySet()) {
                 if (take(i.getKey())) {
                     testAlphanumericTagAmbiguity(i.getKey());
                     return i.getValue();

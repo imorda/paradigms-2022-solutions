@@ -119,7 +119,7 @@ public class ArrayQueueModule {
     }
 
     // Pred: element not null
-    // Post: for i=1..n count of elements that meet "a[i].equals(element)"
+    // Post: X={x \in a | x.equals(element) == true} & R=|X|
     public static int count(Object element){
         assert element != null;
         int ans = 0;

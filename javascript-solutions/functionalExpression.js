@@ -57,15 +57,7 @@ const parseTokenized = function (stack) {
 }
 
 
-let expression = add(
-    subtract(
-        multiply(
-            variable('x'),
-            variable('x')),
-        multiply(
-            cnst(2),
-            variable('x'))),
-    cnst(1));
+let expression = parse("x x * 2 x * - 1 +");
 
 
 for (let i = 0; i <= 10; i++) {

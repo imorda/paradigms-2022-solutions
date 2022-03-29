@@ -23,8 +23,8 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
     }
 
     private class ExpressionParserImpl extends BaseParser {
+        private static final String[] SUPPORTED_VARIABLES = {"x", "y", "z"};
         private final Function<String, T> numbersFactory;
-
         private final List<SupportedBinaryOperations<T>> supportedBinOps = List.of(
                 new SupportedBinaryOperations<>(Add.OPERATION_SYM, Add<T>::new, 20),
                 new SupportedBinaryOperations<>(Subtract.OPERATION_SYM, Subtract<T>::new, 20),
@@ -37,8 +37,6 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
                 Negate.OPERATION_SYM, new SupportedUnaryOperations<T>(Negate::new, -1),
                 Count.OPERATION_SYM, new SupportedUnaryOperations<T>(Count::new, -1)
         );
-        // :NOTE: hello
-        private static final String SUPPORTED_VARIABLES = "xyz";
 
         public ExpressionParserImpl(final CharSource source, final Function<String, T> numFactory) {
             super(source);
@@ -90,22 +88,34 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
                 return op;
             } else if (test(Character.DECIMAL_DIGIT_NUMBER)) {
                 return tryExtractConst(new StringBuilder());
-            } else if (test(x -> SUPPORTED_VARIABLES.indexOf(x) > -1)) {
-                return new Variable<>(String.valueOf(take()));
             } else {
-                final SupportedUnaryOperations<T> operator = takeUnaryOperator();
-                if (operator != null) {
-                    if (operator == supportedUnaryOps.get("-") && test(Character.DECIMAL_DIGIT_NUMBER)) {
-                        final StringBuilder number = new StringBuilder().append('-');
-                        return tryExtractConst(number);
+                final String varSym = takeVariableSymbol();
+                if (varSym != null) {
+                    return new Variable<>(varSym);
+                } else {
+                    final SupportedUnaryOperations<T> operator = takeUnaryOperator();
+                    if (operator != null) {
+                        if (operator == supportedUnaryOps.get("-") && test(Character.DECIMAL_DIGIT_NUMBER)) {
+                            final StringBuilder number = new StringBuilder().append('-');
+                            return tryExtractConst(number);
+                        }
+                        if (test('(')) {
+                            return operator.expFactory().apply(new BraceEnclosed<>(parseOperand()));
+                        }
+                        return operator.expFactory().apply(parseOperand());
                     }
-                    if (test('(')) {
-                        return operator.expFactory().apply(new BraceEnclosed<>(parseOperand()));
-                    }
-                    return operator.expFactory().apply(parseOperand());
+                    throw new InvalidOperandException(source, peekOrEOF());
                 }
-                throw new InvalidOperandException(source, peekOrEOF());
             }
+        }
+
+        private String takeVariableSymbol() {
+            for (String i : SUPPORTED_VARIABLES) {
+                if (take(i)) {
+                    return i;
+                }
+            }
+            return null;
         }
 
         private PriorityExpression<T> tryExtractConst(final StringBuilder number) throws ParseException {
@@ -143,7 +153,7 @@ public final class ExpressionParser<T extends ExpressionNumber<T, ?>> implements
             skipWhitespace();
 
             for (final SupportedBinaryOperations<T> i : supportedBinOps) {
-                if (i.priority() == priority && take(i.name())) {
+                if (i.priority() <= priority && take(i.name())) {
                     testAlphanumericTagAmbiguity(i.name());
                     return i;
                 }

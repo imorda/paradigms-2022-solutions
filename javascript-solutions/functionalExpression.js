@@ -1,18 +1,16 @@
 "use strict";
 
-// :NOTE: унифицировать
-const binOp = f => (left, right) => (x, y, z) => f(left(x, y, z), right(x, y, z));
-const unOp = f => (exp) => (x, y, z) => f(exp(x, y, z));
+const operation = f => (...exprs) => (...vars) => f(...(exprs.map((expr) => expr(...vars))))
 
 const variable = symbol => (x, y, z) => symbol === 'x' ? x : symbol === 'y' ? y : symbol === 'z' ? z : undefined;
 const cnst = num => () => num;
 
-const negate = unOp((exp) => -exp);
-const abs = unOp((exp) => Math.abs(exp));
-const add = binOp((left, right) => left + right);
-const subtract = binOp((left, right) => left - right);
-const multiply = binOp((left, right) => left * right);
-const divide = binOp((left, right) => left / right);
+const negate = operation((exp) => -exp);
+const abs = operation((exp) => Math.abs(exp));
+const add = operation((left, right) => left + right);
+const subtract = operation((left, right) => left - right);
+const multiply = operation((left, right) => left * right);
+const divide = operation((left, right) => left / right);
 const pi = cnst(Math.PI);
 const e = cnst(Math.E);
 const iff = (cond, branch1, branch2) => (x, y, z) => cond(x, y, z) >= 0 ? branch1(x, y, z) : branch2(x, y, z);
@@ -26,11 +24,7 @@ const ternaryOpsDict = {"iff": iff};
 const constsDict = {"pi": pi, "e": e};
 
 const parseTokens = function(n, stack) {
-    // :NOTE: Array.map
-    let ans = [];
-    for(let i = 0; i < n; i++){
-        ans.push(parseTokenized(stack));
-    }
+    let ans = Array.from({length: n}, () => parseTokenized(stack));
     ans.reverse();
     return ans;
 }
@@ -43,16 +37,15 @@ const parseTokenized = function (stack) {
         }
         current = stack.pop().trim().toLowerCase();
     }
-    // :NOTE: Многобуквенные переменные
-    if ("xyz".includes(current)) {
+    if (["x", "y", "z"].includes(current)) {
         return variable(current);
     } else if (binOpsDict[current] !== undefined) {
         return binOpsDict[current](...parseTokens(2, stack));
     } else if (unaryOpsDict[current] !== undefined) {
         return unaryOpsDict[current](...parseTokens(1, stack));
-    } else if (ternaryOpsDict[current] != undefined){
+    } else if (ternaryOpsDict[current] !== undefined){
         return ternaryOpsDict[current](...parseTokens(3, stack));
-    } else if (constsDict[current] != undefined) {
+    } else if (constsDict[current] !== undefined) {
         return constsDict[current];
     } else {
         return cnst(parseInt(current));

@@ -2,8 +2,7 @@
 
 
 class Operation {
-    constructor(symbol, ...expressions) {
-        this.symbol = symbol;
+    constructor(...expressions) {
         this.expressions = expressions;
     }
 
@@ -12,7 +11,7 @@ class Operation {
     }
 
     toString() {
-        return this.expressions.map((expression) => expression.toString()).join(" ") + " " + this.symbol;
+        return this.expressions.map((expression) => expression.toString()).join(" ");
     }
 
     applyOperation(...nums) {
@@ -51,11 +50,11 @@ class AdditiveOp extends Operation {
 
 class Variable extends TrivialOp {
     constructor(value) {
-        super(undefined, value);
+        super(value);
     }
 
     evaluate(...vars) {
-        return vars[Variable.varSymbols.indexOf(this.expressions[0].toString())];
+        return vars[Variable.VAR_SYMBOLS.indexOf(this.expressions[0].toString())];
     }
 
     diff(variable) {
@@ -63,11 +62,11 @@ class Variable extends TrivialOp {
     }
 }
 
-Variable.varSymbols = ["x", "y", "z"];
+Variable.VAR_SYMBOLS = ["x", "y", "z"];
 
 class Const extends TrivialOp {
     constructor(value) {
-        super(undefined, value);
+        super(value);
     }
 
     get value() {
@@ -81,31 +80,129 @@ class Const extends TrivialOp {
 
 class Add extends AdditiveOp {
     constructor(...expr) {
-        super("+", ...expr);
+        super(...expr);
     }
 
     applyOperation(a, b) {
         return a + b;
     }
+
+    toString() {
+        return super.toString() + " +";
+    }
 }
 
 class Subtract extends AdditiveOp {
     constructor(...expr) {
-        super("-", ...expr);
+        super(...expr);
     }
 
     applyOperation(a, b) {
         return a - b;
     }
+
+    toString() {
+        return super.toString() + " -";
+    }
+}
+
+class Pow extends Operation {
+    constructor(...expr) {
+        super(...expr);
+    }
+
+    applyOperation(a, b) {
+        return Math.pow(a, b);
+    }
+
+    toString() {
+        return super.toString() + " pow";
+    }
+
+    diff(...args) {
+        return new Add(
+            new Multiply(
+                new Multiply(
+                    this.expressions[1],
+                    new Pow(
+                        this.expressions[0],
+                        new Subtract(
+                            this.expressions[1],
+                            new Const(1)
+                        )
+                    )
+                ),
+                this.expressions[0].diff(...args)
+            ),
+            new Multiply(
+                new Multiply(
+                    new Pow(
+                        this.expressions[0],
+                        this.expressions[1]
+                    ),
+                    new Ln(this.expressions[0])
+                ),
+                this.expressions[1].diff(...args)
+            )
+        );
+    }
+}
+
+class Log extends Operation {
+    constructor(...expr) {
+        super(...expr);
+    }
+
+    applyOperation(a, b) {
+        return Math.log(Math.abs(b)) / Math.log(Math.abs(a));
+    }
+
+    toString() {
+        return super.toString() + " log";
+    }
+
+    diff(...args) {
+        return new Divide(
+            new Ln(this.expressions[1]),
+            new Ln(this.expressions[0])
+        ).diff(...args);
+    }
+}
+
+class Ln extends Operation {
+    constructor(...expr) {
+        super(...expr);
+    }
+
+    applyOperation(val) {
+        return Math.log(Math.abs(val));
+    }
+
+    toString() {
+        return super.toString() + " ln";
+    }
+
+    diff(...args) {
+        return new Multiply(
+            new Divide(
+                new Const(1),
+                this.expressions[0]),
+            this.expressions[0].diff(...args)
+        )
+    }
 }
 
 class Multiply extends Operation {
     constructor(...expr) {
-        super("*", ...expr);
+        super(...expr);
     }
 
     applyOperation(a, b) {
         return a * b;
+    }
+
+    toString() {
+        return super.toString() + " *";
     }
 
     diff(...args) {
@@ -124,11 +221,15 @@ class Multiply extends Operation {
 
 class Divide extends Operation {
     constructor(...expr) {
-        super("/", ...expr);
+        super(...expr);
     }
 
     applyOperation(a, b) {
         return a / b;
+    }
+
+    toString() {
+        return super.toString() + " /";
     }
 
     diff(...args) {
@@ -153,11 +254,15 @@ class Divide extends Operation {
 
 class Negate extends Operation {
     constructor(...expr) {
-        super("negate", ...expr);
+        super(...expr);
     }
 
     applyOperation(exp) {
         return -exp;
+    }
+
+    toString() {
+        return super.toString() + " negate";
     }
 
     diff(...args) {
@@ -168,7 +273,7 @@ class Negate extends Operation {
 
 const parse = str => parseTokenized(str.split(" "));
 
-const binOpsDict = {"+": Add, "-": Subtract, "*": Multiply, "/": Divide};
+const binOpsDict = {"+": Add, "-": Subtract, "*": Multiply, "/": Divide, "log": Log, "pow": Pow, "ln": Ln};
 const unaryOpsDict = {"negate": Negate};
 
 
@@ -186,7 +291,7 @@ const parseTokenized = function (stack) {
         }
         current = stack.pop().trim().toLowerCase();
     }
-    if (Variable.varSymbols.includes(current)) {
+    if (Variable.VAR_SYMBOLS.includes(current)) {
         return new Variable(current);
     } else if (binOpsDict[current] !== undefined) {
         return new binOpsDict[current](...parseTokens(2, stack));

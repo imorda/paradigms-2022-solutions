@@ -273,8 +273,8 @@ class Negate extends Operation {
 
 const parse = str => parseTokenized(str.split(" "));
 
-const binOpsDict = {"+": Add, "-": Subtract, "*": Multiply, "/": Divide, "log": Log, "pow": Pow, "ln": Ln};
-const unaryOpsDict = {"negate": Negate};
+const binOpsDict = {"+": Add, "-": Subtract, "*": Multiply, "/": Divide, "log": Log, "pow": Pow};
+const unaryOpsDict = {"negate": Negate, "ln": Ln};
 
 
 const parseTokens = function (n, stack) {

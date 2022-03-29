@@ -48,7 +48,7 @@ const parseTokenized = function (stack) {
     } else if (constsDict[current] !== undefined) {
         return constsDict[current];
     } else {
-        return cnst(parseInt(current));
+        return cnst(parseFloat(current));
     }
 }
 

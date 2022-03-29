@@ -298,6 +298,6 @@ const parseTokenized = function (stack) {
     } else if (unaryOpsDict[current] !== undefined) {
         return new unaryOpsDict[current](...parseTokens(1, stack));
     } else {
-        return new Const(parseInt(current));
+        return new Const(parseFloat(current));
     }
 }

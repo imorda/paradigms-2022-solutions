@@ -49,6 +49,8 @@ class AdditiveOp extends Operation {
 }
 
 class Variable extends TrivialOp {
+    static VAR_SYMBOLS = ["x", "y", "z"];
+
     constructor(value) {
         super(value);
     }
@@ -61,8 +63,6 @@ class Variable extends TrivialOp {
         return new Const(variable === this.toString() ? 1 : 0);
     }
 }
-
-Variable.VAR_SYMBOLS = ["x", "y", "z"];
 
 class Const extends TrivialOp {
     constructor(value) {

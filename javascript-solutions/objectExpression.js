@@ -376,16 +376,31 @@ class Negate extends Operation {
     }
 }
 
+class OpTemplate {
+    constructor(arity, obj) {
+        this._arity = arity;
+        this._obj = obj;
+    }
 
-const binOpsDict = {"+": Add, "-": Subtract, "*": Multiply, "/": Divide, "log": Log, "pow": Pow};
-const unaryOpsDict = {"negate": Negate, "ln": Ln};
+    get arity() {
+        return this._arity;
+    }
 
-
-const parseTokens = function (n, stack) {
-    let ans = Array.from({length: n}, () => parseTokenized(stack));
-    ans.reverse();
-    return ans;
+    get obj() {
+        return this._obj;
+    }
 }
+
+const opsMap = {
+    "+": new OpTemplate(2, Add),
+    "-": new OpTemplate(2, Subtract),
+    "*": new OpTemplate(2, Multiply),
+    "/": new OpTemplate(2, Divide),
+    "log": new OpTemplate(2, Log),
+    "pow": new OpTemplate(2, Pow),
+    "negate": new OpTemplate(1, Negate),
+    "ln": new OpTemplate(1, Ln)
+};
 
 
 const parseTokenized = function (stack) {
@@ -398,10 +413,11 @@ const parseTokenized = function (stack) {
     }
     if (Variable.VAR_SYMBOLS.includes(current)) {
         return new Variable(current);
-    } else if (binOpsDict[current] !== undefined) {
-        return new binOpsDict[current](...parseTokens(2, stack));
-    } else if (unaryOpsDict[current] !== undefined) {
-        return new unaryOpsDict[current](...parseTokens(1, stack));
+    } else if (current in opsMap) {
+        const template = opsMap[current];
+        const args = Array.from({length: template.arity}, () => parseTokenized(stack));
+        args.reverse();
+        return new template.obj(...args);
     } else {
         return new Const(parseFloat(current));
     }
@@ -436,8 +452,7 @@ class PrefixParser {
         return parsed;
     }
 
-    static OP_CHARS = Object.getOwnPropertyNames(binOpsDict).join('')
-        + Object.getOwnPropertyNames(unaryOpsDict).join('');
+    static OP_CHARS = Object.getOwnPropertyNames(opsMap).join('');
 
     parse() {
         this.skipSpaces();
@@ -468,10 +483,9 @@ class PrefixParser {
 
         let ans = undefined;
 
-        if (binOpsDict[token] !== undefined) {
-            ans = new binOpsDict[token](this.parse(), this.parse());
-        } else if (unaryOpsDict[token] !== undefined) {
-            ans = new unaryOpsDict[token](this.parse());
+        if (token in opsMap) {
+            const template = opsMap[token];
+            ans = new template.obj(...Array.from({length: template.arity}, () => this.parse()));
         }
 
         this.skipSpaces();

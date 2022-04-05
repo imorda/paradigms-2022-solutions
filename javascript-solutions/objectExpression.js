@@ -1,9 +1,102 @@
 "use strict";
 
+function NotImplementedError(message) {
+
+
+    this.name = "NotImplementedError";
+    this.message = message;
+}
+
+NotImplementedError.prototype = Error.prototype;
+
+function ParseError(message) {
+
+    this.name = "ParseError";
+    this.message = message;
+}
+
+ParseError.prototype = Error.prototype;
+
+class CharSource {
+    constructor() {
+        this.curSymbol = undefined;
+    }
+
+    take(symbols) {
+        if (this.test(symbols)) {
+            this.getNewSymbol();
+            return symbols;
+        }
+        return '';
+    }
+
+    expect(symbols) {
+        if (this.test(symbols)) {
+            this.getNewSymbol();
+            return;
+        }
+        throw this.error(`expected ${symbols}, got ${this.curSymbol}`);
+    }
+
+    test(symbols) {
+        return symbols.includes(this.curSymbol);
+    }
+
+    extractToken(acceptableChars) {
+        let ans = [];
+        while (acceptableChars.includes(this.curSymbol)) {
+            ans.push(this.curSymbol);
+            this.getNewSymbol();
+        }
+        return ans.join('');
+    }
+
+    skipChars(chars) {
+        while (chars.includes(this.curSymbol)) {
+            this.getNewSymbol();
+        }
+    }
+
+    getNewSymbol() {
+        throw new NotImplementedError("getSymbol() not implemented");
+    }
+
+    error(message) {
+        throw new NotImplementedError("error() not implemented");
+    }
+}
+
+
+class StringSource extends CharSource {
+    constructor(string, ...props) {
+        super(...props);
+        this.string = string;
+        this.pos = 0;
+        this.getNewSymbol();
+    }
+
+    getNewSymbol() {
+        if (this.pos >= this.string.length) {
+            this.curSymbol = "EOS";
+        } else {
+            this.curSymbol = this.string[this.pos];
+            this.pos++;
+        }
+    }
+
+    error(message) {
+        return new ParseError(`Parse error occured while parsing string "${this.string}" at position ${this.pos}: ${message}.`)
+    }
+}
+
 
 class Operation {
     constructor(...expressions) {
         this.expressions = expressions;
+    }
+
+    prefix() {
+        return `(${this.opSymbol} ${this.expressions.map((expression) => expression.prefix()).join(" ")})`;
     }
 
     evaluate(...vars) {
@@ -11,17 +104,22 @@ class Operation {
     }
 
     toString() {
-        return this.expressions.map((expression) => expression.toString()).join(" ");
+        return this.expressions.map((expression) => expression.toString()).join(" ") + " " + this.opSymbol;
     }
 
     applyOperation(...nums) {
-        throw new Error("Evaluate must be implemented");
+        throw new NotImplementedError("applyOperation() not implemented");
     }
 
     diff(variable) {
-        throw new Error("Diff must be implemented");
+        throw new NotImplementedError("diff() not implemented");
+    }
+
+    get opSymbol() {
+        throw new NotImplementedError("get opSymbol() not implemented");
     }
 }
+
 
 class TrivialOp extends Operation {
     constructor(...props) {
@@ -34,6 +132,14 @@ class TrivialOp extends Operation {
 
     toString() {
         return this.expressions[0].toString();
+    }
+
+    prefix() {
+        return this.toString();
+    }
+
+    get opSymbol() {
+        return undefined;
     }
 }
 
@@ -87,8 +193,8 @@ class Add extends AdditiveOp {
         return a + b;
     }
 
-    toString() {
-        return super.toString() + " +";
+    get opSymbol() {
+        return '+';
     }
 }
 
@@ -101,8 +207,8 @@ class Subtract extends AdditiveOp {
         return a - b;
     }
 
-    toString() {
-        return super.toString() + " -";
+    get opSymbol() {
+        return '-';
     }
 }
 
@@ -115,8 +221,8 @@ class Pow extends Operation {
         return Math.pow(a, b);
     }
 
-    toString() {
-        return super.toString() + " pow";
+    get opSymbol() {
+        return 'pow';
     }
 
     diff(...args) {
@@ -157,8 +263,8 @@ class Log extends Operation {
         return Math.log(Math.abs(b)) / Math.log(Math.abs(a));
     }
 
-    toString() {
-        return super.toString() + " log";
+    get opSymbol() {
+        return 'log';
     }
 
     diff(...args) {
@@ -178,8 +284,8 @@ class Ln extends Operation {
         return Math.log(Math.abs(val));
     }
 
-    toString() {
-        return super.toString() + " ln";
+    get opSymbol() {
+        return 'ln';
     }
 
     diff(...args) {
@@ -201,8 +307,8 @@ class Multiply extends Operation {
         return a * b;
     }
 
-    toString() {
-        return super.toString() + " *";
+    get opSymbol() {
+        return '*';
     }
 
     diff(...args) {
@@ -228,8 +334,8 @@ class Divide extends Operation {
         return a / b;
     }
 
-    toString() {
-        return super.toString() + " /";
+    get opSymbol() {
+        return '/';
     }
 
     diff(...args) {
@@ -261,8 +367,8 @@ class Negate extends Operation {
         return -exp;
     }
 
-    toString() {
-        return super.toString() + " negate";
+    get opSymbol() {
+        return 'negate';
     }
 
     diff(...args) {
@@ -270,8 +376,6 @@ class Negate extends Operation {
     }
 }
 
-
-const parse = str => parseTokenized(str.split(" "));
 
 const binOpsDict = {"+": Add, "-": Subtract, "*": Multiply, "/": Divide, "log": Log, "pow": Pow};
 const unaryOpsDict = {"negate": Negate, "ln": Ln};
@@ -282,6 +386,7 @@ const parseTokens = function (n, stack) {
     ans.reverse();
     return ans;
 }
+
 
 const parseTokenized = function (stack) {
     let current = stack.pop().trim().toLowerCase();
@@ -300,4 +405,89 @@ const parseTokenized = function (stack) {
     } else {
         return new Const(parseFloat(current));
     }
+}
+
+
+class PrefixParser {
+    constructor(src) {
+        this.source = src
+    }
+
+    skipSpaces() {
+        this.source.skipChars(' ');
+    }
+
+    tryParseNumber() {
+        const token = this.source.take('-')
+            + this.source.extractToken("0123456789")
+            + this.source.take('.')
+            + this.source.extractToken("0123456789");
+
+        if (token.length === 0) {
+            return undefined;
+        }
+
+        const parsed = parseFloat(token);
+
+        if (isNaN(parsed)) {
+            throw this.source.error(`Unparseable numeric token "${token}"`);
+        }
+
+        return parsed;
+    }
+
+    static OP_CHARS = Object.getOwnPropertyNames(binOpsDict).join('')
+        + Object.getOwnPropertyNames(unaryOpsDict).join('');
+
+    parse() {
+        this.skipSpaces();
+
+        let token = this.source.extractToken(Variable.VAR_SYMBOLS.join(''));
+
+        if (token.length !== 0) {
+            if (Variable.VAR_SYMBOLS.includes(token)) {
+                return new Variable(token);
+            }
+            throw this.source.error(`Unrecognized variable-token "${token}"`);
+        }
+
+        token = this.tryParseNumber();
+        if (token !== undefined) {
+            return new Const(token);
+        }
+
+        this.source.expect('(');
+
+        this.skipSpaces();
+
+        token = this.source.extractToken(PrefixParser.OP_CHARS);
+
+        if (this.source.test('1234567890')) {
+            throw this.source.error("expected token separator after operator, got number")
+        }
+
+        let ans = undefined;
+
+        if (binOpsDict[token] !== undefined) {
+            ans = new binOpsDict[token](this.parse(), this.parse());
+        } else if (unaryOpsDict[token] !== undefined) {
+            ans = new unaryOpsDict[token](this.parse());
+        }
+
+        this.skipSpaces();
+
+        this.source.expect(')');
+
+        return ans;
+    }
+}
+
+const parse = str => parseTokenized(str.split(" "));
+const parsePrefix = str => {
+    const src = new StringSource(str);
+    const parser = new PrefixParser(src);
+    const parsed = parser.parse();
+    parser.skipSpaces();
+    src.expect("EOS");
+    return parsed;
 }

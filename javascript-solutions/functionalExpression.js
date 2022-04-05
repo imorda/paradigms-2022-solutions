@@ -1,19 +1,20 @@
 "use strict";
 
-const operation = f => (...exprs) => (...vars) => f(...(exprs.map((expr) => expr(...vars))))
+const operation = f => (...exprs) => (...vars) => f(...(exprs.map((expr) => expr(...vars))));
 
+// :NOTE: Эффективность
 const variable = symbol => (x, y, z) => symbol === 'x' ? x : symbol === 'y' ? y : symbol === 'z' ? z : undefined;
 const cnst = num => () => num;
 
-const negate = operation((exp) => -exp);
-const abs = operation((exp) => Math.abs(exp));
+const negate = operation(exp => -exp);
+const abs = operation(Math.abs);
 const add = operation((left, right) => left + right);
 const subtract = operation((left, right) => left - right);
 const multiply = operation((left, right) => left * right);
 const divide = operation((left, right) => left / right);
 const pi = cnst(Math.PI);
 const e = cnst(Math.E);
-const iff = (cond, branch1, branch2) => (x, y, z) => cond(x, y, z) >= 0 ? branch1(x, y, z) : branch2(x, y, z);
+const iff = (cond, branchT, branchF) => (x, y, z) => cond(x, y, z) >= 0 ? branchT(x, y, z) : branchF(x, y, z);
 
 
 const parse = str => parseTokenized(str.split(" "));
@@ -27,7 +28,7 @@ const parseTokens = function(n, stack) {
     let ans = Array.from({length: n}, () => parseTokenized(stack));
     ans.reverse();
     return ans;
-}
+};
 
 const parseTokenized = function (stack) {
     let current = stack.pop().trim().toLowerCase();
@@ -39,7 +40,8 @@ const parseTokenized = function (stack) {
     }
     if (["x", "y", "z"].includes(current)) {
         return variable(current);
-    } else if (binOpsDict[current] !== undefined) {
+        // :NOTE: Дублирование
+    } else if (current in binOpsDict) {
         return binOpsDict[current](...parseTokens(2, stack));
     } else if (unaryOpsDict[current] !== undefined) {
         return unaryOpsDict[current](...parseTokens(1, stack));
@@ -50,7 +52,7 @@ const parseTokenized = function (stack) {
     } else {
         return cnst(parseFloat(current));
     }
-}
+};
 
 
 let expression = parse("x x * 2 x * - 1 +");

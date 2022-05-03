@@ -12,6 +12,8 @@
   (and (every? vector? args)
        (every? true? (map #(and (apply vect? %)
                                 (apply same_len? %)) args))))
+
+; :NOTE: Упростить
 (defn descending? [v]
   {:pre [(vect? v)]}
   (letfn [(descending' [current, other]
@@ -26,15 +28,16 @@
   {:post [(not (nil? %)) (> % 0)]}
   (if (vect? arg)
     (count arg)
-    (let [inner_n (mapv simplex_n arg)] (if (and (descending? inner_n)
-                                                 (== 1 (last inner_n)))
+    (let [inner_n (mapv simplex_n arg)] (if
+                                          (and (descending? inner_n) (== 1 (last inner_n)))
                                           (first inner_n)))))
 
-(defn vect_eval [op, & args]
+(defn vect_eval [op & args]
   {:pre [(apply vect? args) (apply same_len? args)]
    :post [(vect? %) (same_len? (first args) %)]}
   (apply mapv op args))
 
+; :NOTE: Упростить
 (defn v+ [& args]
   (apply vect_eval + args))
 
@@ -62,6 +65,7 @@
 (defn v*s [v, & scalars]
   {:pre [(vect? v) (every? number? scalars)]
    :post [(vect? %) (same_len? % v)]}
+; :NOTE: 0 скаляров
   (mapv (partial * (reduce * scalars)) v))
 
 (defn transpose [m]

@@ -20,15 +20,17 @@
     (let [inner_n (map simplex_n arg)] (if (= inner_n (range (first inner_n) 0 -1))
                                           (first inner_n)))))
 
-(defn vect_eval [op & args]
-  {:pre [(apply vect? args) (apply same_len? args)]
-   :post [(vect? %) (same_len? (first args) %)]}
-  (apply mapv op args))
+(defn vect_eval [op]
+  (fn [& args]
+    {:pre [(apply vect? args) (apply same_len? args)]
+     :post [(vect? %) (same_len? (first args) %)]}
+    (apply mapv op args)))
 
-(def v+ (partial vect_eval +))
-(def v- (partial vect_eval -))
-(def v* (partial vect_eval *))
-(def vd (partial vect_eval /))
+; :NOTE: CP
+(def v+ (vect_eval +))
+(def v- (vect_eval -))
+(def v* (vect_eval *))
+(def vd (vect_eval /))
 
 (defn scalar [& args]
   {:post [(number? %)]}
@@ -45,7 +47,7 @@
 (defn v*s [v & scalars]
   {:pre [(vect? v) (every? number? scalars)]
    :post [(vect? %) (same_len? % v)]}
-  (mapv (partial * (reduce * 1 scalars)) v))
+  (mapv (partial * (apply * scalars)) v))
 
 (defn transpose [m]
   {:pre [(matrix? m)]

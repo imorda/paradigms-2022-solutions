@@ -1,7 +1,7 @@
 (load-file "proto.clj")
 (load-file "parser.clj")
 
-(defn operation [op, & args]
+(defn operation [op & args]
   (fn [vars]
     (apply op (map #(% vars) args))))
 (defn meanImpl [& args]
@@ -13,6 +13,7 @@
 (defn varnImpl [& args] (let [meanV (apply meanImpl args)]
                           (/ (reduce + (map #(Math/pow (- meanV %1) 2) args)) (count args))))
 
+; :NOTE: -partial
 (def add (partial operation +))
 (def subtract (partial operation -))
 (def multiply (partial operation *))
@@ -31,7 +32,7 @@
     (seq? buffer) (apply (get tokenMap (first buffer))
                          (map #(parseTokenized % tokenMap constFact varFact) (rest buffer)))
     (number? buffer) (constFact buffer)
-    :else (varFact (name buffer))))
+    (symbol? buffer) (varFact (name buffer))))
 
 (def opMap {'+      add
             '-      subtract

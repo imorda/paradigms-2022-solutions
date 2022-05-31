@@ -49,18 +49,25 @@
 (def _applyOperation (field :applyOp))
 (def evaluate (method :eval))
 (def toString (method :toString))
+(def toStringInfix (method :toStringInfix))
 (def _applyDiff (method :applyDiff))
 (def _applyUnaryDiff (field :applyUnaryDiff))
 (def _applyBinDiff (field :applyBinDiff))
 (def diff (method :diff))
-(declare Constant Variable Multiply Divide Add Subtract Negate Mean Varn)
+(declare Constant ZERO ONE M_ONE TWO Variable Multiply Divide Add Subtract Negate Mean Varn ILn ILog IPow)
 
 (def OperationPrototype
-  {:eval     (fn [this vars] (apply (_applyOperation this) (map #(evaluate % vars) (_expressions this))))
-   :toString (fn [this] (clojure.string/join "" ["(" (_opSymbol this) " "
-                                                 (clojure.string/join " " (map toString (_expressions this)))
-                                                 ")"]))
-   :diff     (fn [this vars] (apply _applyDiff this (map #(diff % vars) (_expressions this))))
+  {:eval          (fn [this vars] (apply (_applyOperation this) (map #(evaluate % vars) (_expressions this))))
+   :toString      (fn [this] (clojure.string/join "" ["(" (_opSymbol this) " "
+                                                      (clojure.string/join " " (map toString (_expressions this)))
+                                                      ")"]))
+   :toStringInfix (fn [this] (clojure.string/join "" ["("
+                                                      (clojure.string/join (clojure.string/join "" [" "
+                                                                                                    (_opSymbol this)
+                                                                                                    " "])
+                                                                           (map toStringInfix (_expressions this)))
+                                                      ")"]))
+   :diff          (fn [this vars] (apply _applyDiff this (map #(diff % vars) (_expressions this))))
    })
 (defn Operation [this & expr]
   (assoc this
@@ -68,7 +75,15 @@
 
 (def TrivialOpPrototype
   (assoc OperationPrototype
-    :toString (fn [this] (apply str (_expressions this)))))
+    :toString (fn [this] (apply str (_expressions this)))
+    :toStringInfix (partial toString)))
+
+(def UnaryOpPrototype
+  (assoc OperationPrototype
+    :toStringInfix (fn [this] (clojure.string/join "" [(_opSymbol this)
+                                                       "("
+                                                       (toStringInfix (first (_expressions this)))
+                                                       ")"]))))
 
 (def BinReduciblePrototype
   (assoc OperationPrototype
@@ -80,17 +95,22 @@
                               (map vector exps
                                    (map #(diff % vars) exps)))))))))
 
-(def VariablePrototype
-  (assoc TrivialOpPrototype
-    :eval (fn [this vars] (get vars (first (_expressions this))))
-    :diff (fn [this var] (Constant (if (= var (first (_expressions this))) 1 0)))))
-(def Variable (constructor Operation VariablePrototype))
-
 (def ConstPrototype
   (assoc TrivialOpPrototype
     :eval (fn [this _] (first (_expressions this)))
-    :diff (fn [_ _] (Constant 0))))
+    :diff (fn [_ _] ZERO)))
 (def Constant (constructor Operation ConstPrototype))
+(def ZERO (Constant 0))
+(def ONE (Constant 1))
+(def M_ONE (Constant -1))
+(def TWO (Constant 2))
+
+(def VariablePrototype
+  (assoc TrivialOpPrototype
+    :eval (fn [this vars] (get vars ((comp str #(Character/toLowerCase %) first first) (_expressions this))))
+    :diff (fn [this var] (if (= var ((comp str #(Character/toLowerCase %) first first)
+                                     (_expressions this))) ONE ZERO))))
+(def Variable (constructor Operation VariablePrototype))
 
 (def AddPrototype
   (assoc OperationPrototype
@@ -114,6 +134,32 @@
     :applyUnaryDiff #(identity %2)))
 (def Multiply (constructor Operation MultiplyPrototype))
 
+(def ILnPrototype
+  (assoc UnaryOpPrototype
+    :symbol "ln"
+    :applyOp #(Math/log (Math/abs %))
+    :applyDiff (fn [this & args] (apply Multiply (apply Divide ONE (_expressions this)) args))))
+(def ILn (constructor Operation ILnPrototype))
+
+(def ILogPrototype
+  (assoc BinReduciblePrototype
+    :symbol "//"
+    :applyOp (fn [& args] (apply divideImpl (reverse (map #(Math/log (Math/abs %)) args))))
+    :applyBinDiff (fn [b db a da] [(ILog a b) (Divide (Subtract (Multiply (Multiply (Divide ONE a) da)
+                                                                          (ILn b))
+                                                                (Multiply (ILn a)
+                                                                          (Multiply (Divide ONE b) db)))
+                                                      (Multiply (ILn b) (ILn b)))])))
+(def ILog (constructor Operation ILogPrototype))
+
+(def IPowPrototype
+  (assoc BinReduciblePrototype
+    :symbol "**"
+    :applyOp (fn [& args] (reduce #(Math/pow %1 %2) args))
+    :applyBinDiff (fn [a da b db] [(IPow a b) (Add (Multiply (Multiply b (IPow a (Subtract b ONE))) da)
+                                                   (Multiply (Multiply (IPow a b) (ILn a)) db))])))
+(def IPow (constructor Operation IPowPrototype))
+
 (def DividePrototype
   (assoc BinReduciblePrototype
     :symbol "/"
@@ -123,10 +169,10 @@
 (def Divide (constructor Operation DividePrototype))
 
 (def NegatePrototype
-  (assoc OperationPrototype
+  (assoc UnaryOpPrototype
     :symbol "negate"
     :applyOp -
-    :applyDiff (fn [_ & args] (apply Multiply (Constant -1) args))))
+    :applyDiff (fn [_ & args] (apply Multiply M_ONE args))))
 (def Negate (constructor Operation NegatePrototype))
 
 (def MeanPrototype
@@ -144,10 +190,8 @@
                  (let [mn (apply Mean (_expressions this))
                        dmn (apply _applyDiff mn args)]
                    (Divide (apply Add (map #(apply (fn [a da]
-                                                     (Multiply
-                                                       (Constant 2)
-                                                       (Subtract a mn)
-                                                       (Subtract da dmn))) %) (map vector (_expressions this) args)))
+                                                     (Multiply TWO (Subtract a mn)
+                                                               (Subtract da dmn))) %) (map vector (_expressions this) args)))
                            (Constant (count args)))))))
 (def Varn (constructor Operation VarnPrototype))
 
@@ -160,3 +204,44 @@
              'varn   Varn})
 (defn parseObject [input]
   (parseTokenized (read-string input) objMap Constant Variable))
+
+; Parser begins here
+(def parseObjectInfix
+  (let [
+        *all-chars (mapv char (range 0 128))
+        *digit (+char (apply str (filter #(Character/isDigit %) *all-chars)))
+        *space (+char (apply str (filter #(Character/isWhitespace %) *all-chars)))
+        *letter (+char (apply str (filter #(Character/isLetter %) *all-chars)))
+        *ws (+ignore (+star *space))
+        *number (+map read-string (+seqf #(apply str (flatten %&)) (+opt (+char "-")) (+plus *digit)
+                                         (+opt (+seq (+char ".") (+plus *digit)))))
+        *word (+str (+plus *letter))]
+    (letfn [
+            (*string [value] (apply +seqf str (map #(+char (str %)) value)))
+            (*operator [expectedOpMap] (apply +or (map *string (keys expectedOpMap))))
+            (*operationLeftAssoc [higherPriorityOp currentPriorityOpMap]
+              (+seqf #(reduce (fn [accumulator [operator operand]]
+                                ((get currentPriorityOpMap operator) accumulator operand)) %1 %2)
+                     *ws higherPriorityOp (+star (+seq *ws (*operator currentPriorityOpMap) *ws higherPriorityOp))))
+            (*operationRightAssoc [higherPriorityOp currentPriorityOpMap]
+              (+seqf (fn [& args] (apply (fn
+                                           ([lOperand _] lOperand)
+                                           ([lOperand operator rOperand] ((get currentPriorityOpMap operator)
+                                                                          lOperand rOperand))) (flatten args)))
+                     *ws higherPriorityOp
+                     (+opt (+seq *ws (*operator currentPriorityOpMap)
+                                 *ws (delay (*operationRightAssoc higherPriorityOp currentPriorityOpMap))))))
+            (*operationUnary [higherPriorityOp currentPriorityOpMap]
+              (+or (+seqf (fn [operator operand] ((get currentPriorityOpMap operator) operand))
+                          *ws (*operator currentPriorityOpMap)
+                          *ws (delay (*operationUnary higherPriorityOp currentPriorityOpMap)))
+                   (+seqn 0 *ws higherPriorityOp)))
+            (*operand [] (+or (+seqn 1 *ws (+char "(") *ws (delay (*lowestPriorityOperation)) *ws (+char ")"))
+                              (+seqf Variable *ws *word)
+                              (+seqf Constant *ws *number)))
+            (*unaryOps [] (*operationUnary (*operand) {"negate" Negate "ln" ILn}))
+            (*powLog [] (*operationRightAssoc (*unaryOps) {"**" IPow "//" ILog}))
+            (*divideMultiply [] (*operationLeftAssoc (*powLog) {"*" Multiply "/" Divide}))
+            (*addSubtract [] (*operationLeftAssoc (*divideMultiply) {"+" Add "-" Subtract}))
+            (*lowestPriorityOperation [] (*addSubtract))]
+      (+parser (+seqn 0 *ws (*lowestPriorityOperation) *ws)))))

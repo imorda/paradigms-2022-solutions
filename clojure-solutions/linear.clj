@@ -26,7 +26,6 @@
      :post [(vect? %) (same_len? (first args) %)]}
     (apply mapv op args)))
 
-; :NOTE: CP
 (def v+ (vect_eval +))
 (def v- (vect_eval -))
 (def v* (vect_eval *))
@@ -75,24 +74,26 @@
   (mapv (fn [v]
           (apply v*s v scalars)) m))
 
-(defn matrix_eval [op & args]
+(defn matrix_eval [op]
+  (fn [& args]
   {:pre  [(apply matrix? args) (apply same_len? args) (apply same_len? (map first args))]
    :post [(matrix? %) (same_len? % (first args)) (same_len? (first %) (first (first args)))]}
-  (apply mapv op args))
+  (apply mapv op args)))
 
-(def m+ (partial matrix_eval v+))
-(def m- (partial matrix_eval v-))
-(def m* (partial matrix_eval v*))
-(def md (partial matrix_eval vd))
+(def m+ (matrix_eval v+))
+(def m- (matrix_eval v-))
+(def m* (matrix_eval v*))
+(def md (matrix_eval vd))
 
-(defn simplex_eval [op_v op_x & args]
+(defn simplex_eval [op_v op_x]
+  (fn [& args]
   {:pre [(apply == (map simplex_n args))]
    :post [(== (simplex_n %) (simplex_n (first args)))]}
   (if (apply vect? args)
     (apply op_v args)
-    (apply mapv #(apply simplex_eval op_v op_x %&) args)))
+    (apply mapv (simplex_eval op_v op_x) args))))
 
-(def x+ (partial simplex_eval v+ x+))
-(def x- (partial simplex_eval v- x-))
-(def x* (partial simplex_eval v* x*))
-(def xd (partial simplex_eval vd xd))
+(def x+ (simplex_eval v+ x+))
+(def x- (simplex_eval v- x-))
+(def x* (simplex_eval v* x*))
+(def xd (simplex_eval vd xd))

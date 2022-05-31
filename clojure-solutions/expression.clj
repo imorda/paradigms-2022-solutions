@@ -1,9 +1,10 @@
 (load-file "proto.clj")
 (load-file "parser.clj")
 
-(defn operation [op & args]
-  (fn [vars]
-    (apply op (map #(% vars) args))))
+(defn operation [op]
+  (fn [& args]
+    (fn [vars]
+      (apply op (map #(% vars) args)))))
 (defn meanImpl [& args]
   (/ (reduce + args) (count args)))
 (defn divideImpl [& args]
@@ -13,13 +14,12 @@
 (defn varnImpl [& args] (let [meanV (apply meanImpl args)]
                           (/ (reduce + (map #(Math/pow (- meanV %1) 2) args)) (count args))))
 
-; :NOTE: -partial
-(def add (partial operation +))
-(def subtract (partial operation -))
-(def multiply (partial operation *))
-(def mean (partial operation meanImpl))
-(def varn (partial operation varnImpl))
-(def divide (partial operation divideImpl))
+(def add (operation +))
+(def subtract (operation -))
+(def multiply (operation *))
+(def mean (operation meanImpl))
+(def varn (operation varnImpl))
+(def divide (operation divideImpl))
 
 (def negate subtract)
 (def constant constantly)
